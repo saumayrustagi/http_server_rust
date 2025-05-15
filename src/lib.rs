@@ -1,10 +1,11 @@
+pub mod server;
+
 use std::{
     sync::{Arc, Mutex, mpsc},
     thread,
 };
 
 pub struct ThreadPool {
-    workers: Vec<Worker>,
     sender: mpsc::Sender<Job>,
 }
 
@@ -30,7 +31,7 @@ impl ThreadPool {
             workers.push(Worker::new(id, Arc::clone(&receiver)));
         }
 
-        ThreadPool { workers, sender }
+        ThreadPool { sender }
     }
 
     pub fn execute<F>(&self, f: F)
@@ -43,14 +44,11 @@ impl ThreadPool {
     }
 }
 
-struct Worker {
-    id: usize,
-    thread: thread::JoinHandle<()>,
-}
+struct Worker;
 
 impl Worker {
-    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
-        let thread = thread::spawn(move || {
+    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) {
+        thread::spawn(move || {
             loop {
                 let job = receiver.lock().unwrap().recv().unwrap();
 
@@ -59,7 +57,5 @@ impl Worker {
                 job();
             }
         });
-
-        Worker { id, thread }
     }
 }
